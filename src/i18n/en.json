@@ -1,0 +1,48 @@
+{
+    "app_name": "CollegeBot",
+    "tagline": "AI-Powered Assistant",
+    "chat": {
+        "welcome_title": "How can I help you today?",
+        "welcome_subtitle": "Ask me anything about the college documents.",
+        "placeholder": "Type your question...",
+        "loading": "Thinking..."
+    },
+    "auth": {
+        "sign_in": "Sign In",
+        "sign_up": "Sign Up",
+        "sign_out": "Sign Out",
+        "email": "Email",
+        "password": "Password",
+        "login_title": "Welcome Back",
+        "register_title": "Create Account",
+        "have_account": "Already have an account?",
+        "no_account": "Don't have an account?"
+    },
+    "admin": {
+        "panel": "Admin Panel",
+        "analytics": "Analytics",
+        "upload_pdf": "Upload PDF",
+        "manage_docs": "Manage Documents",
+        "delete": "Delete",
+        "upload_success": "Document uploaded successfully",
+        "upload_error": "Failed to upload document"
+    },
+    "analytics": {
+        "title": "Analytics Dashboard",
+        "subtitle": "Track usage and performance metrics",
+        "total_messages": "Total Messages",
+        "unique_users": "Unique Users",
+        "avg_response_time": "Avg Response Time",
+        "messages_over_time": "Messages Over Time",
+        "top_questions": "Top Questions",
+        "no_data": "No data available",
+        "back_to_chat": "Back to Chat",
+        "last_7_days": "Last 7 days",
+        "last_14_days": "Last 14 days",
+        "last_30_days": "Last 30 days"
+    },
+    "errors": {
+        "rate_limit": "You've reached the message limit. Please wait a moment before sending more messages.",
+        "generic": "Something went wrong. Please try again."
+    }
+}

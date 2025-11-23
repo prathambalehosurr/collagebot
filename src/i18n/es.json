@@ -1,0 +1,48 @@
+{
+    "app_name": "CollegeBot",
+    "tagline": "Asistente con IA",
+    "chat": {
+        "welcome_title": "¿Cómo puedo ayudarte hoy?",
+        "welcome_subtitle": "Pregúntame cualquier cosa sobre los documentos del colegio.",
+        "placeholder": "Escribe tu pregunta...",
+        "loading": "Pensando..."
+    },
+    "auth": {
+        "sign_in": "Iniciar Sesión",
+        "sign_up": "Registrarse",
+        "sign_out": "Cerrar Sesión",
+        "email": "Correo Electrónico",
+        "password": "Contraseña",
+        "login_title": "Bienvenido de Nuevo",
+        "register_title": "Crear Cuenta",
+        "have_account": "¿Ya tienes una cuenta?",
+        "no_account": "¿No tienes una cuenta?"
+    },
+    "admin": {
+        "panel": "Panel de Administración",
+        "analytics": "Analíticas",
+        "upload_pdf": "Subir PDF",
+        "manage_docs": "Gestionar Documentos",
+        "delete": "Eliminar",
+        "upload_success": "Documento subido exitosamente",
+        "upload_error": "Error al subir documento"
+    },
+    "analytics": {
+        "title": "Panel de Analíticas",
+        "subtitle": "Seguimiento de uso y métricas de rendimiento",
+        "total_messages": "Mensajes Totales",
+        "unique_users": "Usuarios Únicos",
+        "avg_response_time": "Tiempo de Respuesta Promedio",
+        "messages_over_time": "Mensajes a lo Largo del Tiempo",
+        "top_questions": "Preguntas Principales",
+        "no_data": "No hay datos disponibles",
+        "back_to_chat": "Volver al Chat",
+        "last_7_days": "Últimos 7 días",
+        "last_14_days": "Últimos 14 días",
+        "last_30_days": "Últimos 30 días"
+    },
+    "errors": {
+        "rate_limit": "Has alcanzado el límite de mensajes. Por favor espera un momento antes de enviar más mensajes.",
+        "generic": "Algo salió mal. Por favor intenta de nuevo."
+    }
+}
