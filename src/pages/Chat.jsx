@@ -150,15 +150,58 @@ export default function Chat() {
                             gap: '0.25rem'
                         }}>
                             <Sparkles size={12} /> AI-Powered Assistant
-                            border: '1px solid var(--glass-border)',
-                            borderRadius: '0.75rem',
-                            color: 'var(--text-primary)',
-                            transition: 'all 0.3s'
-                    }}>
-                            <LogOut size={18} />
-                            Sign Out
-                        </button>
+                        </p>
                     </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                    {isAdmin && (
+                        <>
+                            <Link to="/admin" className="btn btn-secondary" style={{
+                                padding: '0.625rem 1.25rem',
+                                gap: '0.5rem',
+                                background: 'var(--bg-tertiary)',
+                                border: '1px solid var(--glass-border)',
+                                borderRadius: '0.75rem',
+                                color: 'var(--text-primary)',
+                                textDecoration: 'none',
+                                transition: 'all 0.3s',
+                                display: 'flex',
+                                alignItems: 'center'
+                            }}>
+                                <Settings size={18} />
+                                Admin Panel
+                            </Link>
+                            <Link to="/analytics" className="btn btn-secondary" style={{
+                                padding: '0.625rem 1.25rem',
+                                gap: '0.5rem',
+                                background: 'var(--bg-tertiary)',
+                                border: '1px solid var(--glass-border)',
+                                borderRadius: '0.75rem',
+                                color: 'var(--text-primary)',
+                                textDecoration: 'none',
+                                transition: 'all 0.3s',
+                                display: 'flex',
+                                alignItems: 'center'
+                            }}>
+                                <TrendingUp size={18} />
+                                Analytics
+                            </Link>
+                        </>
+                    )}
+                    <button onClick={signOut} className="btn btn-secondary" style={{
+                        padding: '0.625rem 1.25rem',
+                        gap: '0.5rem',
+                        background: 'var(--bg-tertiary)',
+                        border: '1px solid var(--glass-border)',
+                        borderRadius: '0.75rem',
+                        color: 'var(--text-primary)',
+                        transition: 'all 0.3s'
+                    }}>
+                        <LogOut size={18} />
+                        Sign Out
+                    </button>
+                </div>
             </header>
 
             {/* Chat Area */}
