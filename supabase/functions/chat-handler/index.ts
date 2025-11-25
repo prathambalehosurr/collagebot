@@ -6,6 +6,62 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Helper function to generate embeddings using Bytez API
+async function generateEmbedding(text: string, bytezApiKey: string): Promise<number[]> {
+  try {
+    const response = await fetch('https://api.bytez.com/models/v2/openai/v1/embeddings', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${bytezApiKey}`
+      },
+      body: JSON.stringify({
+        model: 'nomic-embed-text-v1.5',
+        input: text.substring(0, 8000), // Limit text length
+        task_type: 'search_query'
+      })
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('Embedding API error:', response.status, errorText)
+      throw new Error(`Failed to generate embedding: ${response.status}`)
+    }
+
+    const data = await response.json()
+    return data.data[0].embedding
+  } catch (error: any) {
+    console.error('Error generating embedding:', error)
+    throw error
+  }
+}
+
+// Helper function to search documents using vector similarity
+async function searchDocuments(
+  supabaseClient: any,
+  queryEmbedding: number[],
+  matchThreshold: number = 0.5,
+  matchCount: number = 3
+) {
+  try {
+    const { data, error } = await supabaseClient.rpc('match_documents', {
+      query_embedding: queryEmbedding,
+      match_threshold: matchThreshold,
+      match_count: matchCount
+    })
+
+    if (error) {
+      console.error('Vector search error:', error)
+      return []
+    }
+
+    return data || []
+  } catch (error: any) {
+    console.error('Error searching documents:', error)
+    return []
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -67,14 +123,56 @@ serve(async (req) => {
 
     console.log(`Processing message for user ${user.id}: "${userMessage.substring(0, 50)}..."`)
 
+    // RAG: Search for relevant documents
+    let contextText = ''
+    let citations: any[] = []
+    
+    try {
+      const queryEmbedding = await generateEmbedding(userMessage, bytezApiKey)
+      const relevantDocs = await searchDocuments(supabaseClient, queryEmbedding, 0.5, 3)
+      
+      if (relevantDocs && relevantDocs.length > 0) {
+        console.log(`Found ${relevantDocs.length} relevant documents`)
+        
+        // Build context from retrieved documents
+        contextText = relevantDocs
+          .map((doc: any, idx: number) => `[Document ${idx + 1}]: ${doc.content.substring(0, 1000)}`)
+          .join('\n\n')
+        
+        // Store citations for response
+        citations = relevantDocs.map((doc: any) => ({
+          id: doc.id,
+          similarity: doc.similarity
+        }))
+      } else {
+        console.log('No relevant documents found')
+      }
+    } catch (error: any) {
+      console.error('RAG search error:', error)
+      // Continue without RAG if search fails
+    }
+
+    // Prepare system prompt with context
+    const systemPrompt = contextText
+      ? `You are a helpful and enthusiastic college assistant chatbot.
+You have access to the following information from college documents:
+
+${contextText}
+
+Use this information to answer the student's questions accurately.
+If the information is in the documents above, cite it in your response.
+If you don't know something or it's not in the documents, say so and advise them to contact the college administration.
+Format your response using Markdown (bold, lists, etc.) where appropriate.`
+      : `You are a helpful and enthusiastic college assistant chatbot.
+Answer the student's questions about the college to the best of your ability.
+If you don't know something, say so and advise them to contact the college administration.
+Format your response using Markdown (bold, lists, etc.) where appropriate.`
+
     // Prepare messages for Bytez API (OpenAI-compatible format)
     const apiMessages = [
       {
         role: 'system',
-        content: `You are a helpful and enthusiastic college assistant chatbot.
-Answer the student's questions about the college to the best of your ability.
-If you don't know something, say so and advise them to contact the college administration.
-Format your response using Markdown (bold, lists, etc.) where appropriate.`
+        content: systemPrompt
       },
       ...messages.map((m: any) => ({
         role: m.role === 'assistant' ? 'assistant' : 'user',
@@ -114,7 +212,10 @@ Format your response using Markdown (bold, lists, etc.) where appropriate.`
     console.log(`Response generated successfully (${responseText.length} chars)`)
 
     return new Response(
-      JSON.stringify({ response: responseText }),
+      JSON.stringify({ 
+        response: responseText,
+        citations: citations.length > 0 ? citations : undefined
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 

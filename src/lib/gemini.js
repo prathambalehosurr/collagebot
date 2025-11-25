@@ -3,6 +3,7 @@ import { supabase } from './supabase';
 /**
  * Generate a response using the Edge Function (which calls Bytez API)
  * @param {Array} messages - Chat history
+ * @returns {Promise<{response: string, citations: Array}>}
  */
 export async function generateResponse(messages) {
     try {
@@ -19,7 +20,11 @@ export async function generateResponse(messages) {
             throw new Error('Invalid response from server');
         }
 
-        return data.response;
+        // Return both response and citations
+        return {
+            response: data.response,
+            citations: data.citations || []
+        };
     } catch (error) {
         console.error('Chat Error:', error);
 
