@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { GoogleGenerativeAI } from 'https://esm.sh/@google/generative-ai'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,9 +12,26 @@ serve(async (req) => {
   }
 
   try {
-    const { messages } = await req.json()
-    const userMessage = messages[messages.length - 1].content
+    // Validate request body
+    const body = await req.json()
+    const { messages } = body
 
+    if (!messages || !Array.isArray(messages) || messages.length === 0) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid request: messages array is required' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    const userMessage = messages[messages.length - 1]?.content
+    if (!userMessage || typeof userMessage !== 'string') {
+      return new Response(
+        JSON.stringify({ error: 'Invalid request: last message must have content' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Authenticate user
     const authHeader = req.headers.get('authorization')
     if (!authHeader) {
       return new Response(
@@ -32,34 +48,70 @@ serve(async (req) => {
 
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser()
     if (userError || !user) {
+      console.error('Auth error:', userError)
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    // Initialize Gemini (chat only, no embeddings for now)
-    const genAI = new GoogleGenerativeAI(Deno.env.get('GEMINI_API_KEY') ?? '')
-    const chatModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
+    // Validate Bytez API key
+    const bytezApiKey = Deno.env.get('BYTEZ_API_KEY')
+    if (!bytezApiKey) {
+      console.error('BYTEZ_API_KEY environment variable is not set')
+      return new Response(
+        JSON.stringify({ error: 'Server configuration error: API key not configured' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
 
-    // Simple prompt without RAG
-    const systemPrompt = `You are a helpful and enthusiastic college assistant chatbot.
-    Answer the student's questions about the college to the best of your ability.
-    If you don't know something, say so and advise them to contact the college administration.
-    Format your response using Markdown (bold, lists, etc.) where appropriate.`
+    console.log(`Processing message for user ${user.id}: "${userMessage.substring(0, 50)}..."`)
 
-    const chat = chatModel.startChat({
-      history: messages.slice(0, -1).map((m: any) => ({
-        role: m.role === 'user' ? 'user' : 'model',
-        parts: [{ text: m.content }]
-      })),
-      generationConfig: {
-        maxOutputTokens: 1000,
-      }
+    // Prepare messages for Bytez API (OpenAI-compatible format)
+    const apiMessages = [
+      {
+        role: 'system',
+        content: `You are a helpful and enthusiastic college assistant chatbot.
+Answer the student's questions about the college to the best of your ability.
+If you don't know something, say so and advise them to contact the college administration.
+Format your response using Markdown (bold, lists, etc.) where appropriate.`
+      },
+      ...messages.map((m: any) => ({
+        role: m.role === 'assistant' ? 'assistant' : 'user',
+        content: m.content
+      }))
+    ]
+
+    // Call Bytez API using OpenAI-compatible endpoint
+    const response = await fetch('https://api.bytez.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${bytezApiKey}`
+      },
+      body: JSON.stringify({
+        model: 'Qwen/Qwen3-4B-Instruct-2507',
+        messages: apiMessages,
+        max_tokens: 1000,
+        temperature: 0.7
+      })
     })
 
-    const result = await chat.sendMessage(userMessage + "\n\nSystem Instruction: " + systemPrompt)
-    const responseText = result.response.text()
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('Bytez API error:', response.status, errorText)
+      throw new Error(`Bytez API returned ${response.status}: ${errorText}`)
+    }
+
+    const data = await response.json()
+    const responseText = data.choices?.[0]?.message?.content
+
+    if (!responseText) {
+      console.error('Invalid response from Bytez API:', data)
+      throw new Error('Invalid response from AI model')
+    }
+
+    console.log(`Response generated successfully (${responseText.length} chars)`)
 
     return new Response(
       JSON.stringify({ response: responseText }),
@@ -67,10 +119,29 @@ serve(async (req) => {
     )
 
   } catch (error: any) {
-    console.error('Edge Function Error:', error)
+    console.error('Edge Function Error:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    })
+
+    // Provide user-friendly error messages
+    let errorMessage = 'An unexpected error occurred'
+    let statusCode = 500
+
+    if (error.message?.includes('API key') || error.message?.includes('401')) {
+      errorMessage = 'Invalid API key configuration'
+    } else if (error.message?.includes('quota') || error.message?.includes('429')) {
+      errorMessage = 'API quota exceeded. Please try again later.'
+    } else if (error.message?.includes('network') || error.message?.includes('fetch')) {
+      errorMessage = 'Network error. Please check your connection and try again.'
+    } else if (error.message) {
+      errorMessage = `Error: ${error.message}`
+    }
+
     return new Response(
-      JSON.stringify({ error: error.message || 'Unknown error' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ error: errorMessage }),
+      { status: statusCode, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
 })

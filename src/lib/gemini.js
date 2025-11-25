@@ -1,9 +1,8 @@
 import { supabase } from './supabase';
 
 /**
- * Generate a response using the secure Edge Function
+ * Generate a response using the Edge Function (which calls Bytez API)
  * @param {Array} messages - Chat history
- * @param {string} context - RAG context (optional, handled by Edge Function)
  */
 export async function generateResponse(messages) {
     try {
@@ -12,31 +11,37 @@ export async function generateResponse(messages) {
         });
 
         if (error) {
-            // Handle rate limiting
-            if (error.message && error.message.includes('Rate limit exceeded')) {
-                throw new Error('⏱️ You\'ve reached the message limit. Please wait a moment before sending more messages.');
-            }
+            console.error('Edge Function Error:', error);
             throw error;
         }
-        return data.response;
-    } catch (error) {
-        console.error('Edge Function Error:', error);
 
-        // User-friendly error messages
-        if (error.message.includes('Rate limit')) {
-            throw error; // Already formatted
+        if (!data || !data.response) {
+            throw new Error('Invalid response from server');
         }
 
-        throw new Error(`Failed to generate response: ${error.message}`);
+        return data.response;
+    } catch (error) {
+        console.error('Chat Error:', error);
+
+        // User-friendly error messages
+        if (error.message?.includes('Rate limit')) {
+            throw new Error('⏱️ You\'ve reached the message limit. Please wait a moment before sending more messages.');
+        } else if (error.message?.includes('API key') || error.message?.includes('401')) {
+            throw new Error('Authentication error. Please try logging in again.');
+        } else if (error.message?.includes('quota') || error.message?.includes('429')) {
+            throw new Error('Service quota exceeded. Please try again later.');
+        } else if (error.message?.includes('network') || error.message?.includes('fetch')) {
+            throw new Error('Network error. Please check your connection and try again.');
+        }
+
+        throw new Error(`Failed to generate response: ${error.message || 'Unknown error'}`);
     }
 }
 
 /**
- * This function is no longer needed as embeddings are handled by the Edge Function
- * Keeping it for backward compatibility but it now calls the Edge Function
+ * This function is no longer needed
+ * Keeping it for backward compatibility
  */
 export async function embedText(text) {
-    // Edge Function handles embeddings internally
-    // This is kept for compatibility but not used
     return null;
 }
