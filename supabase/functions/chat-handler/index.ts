@@ -6,29 +6,30 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// Helper function to generate embeddings using Bytez API
-async function generateEmbedding(text: string, bytezApiKey: string): Promise<number[]> {
+// Helper function to generate embeddings using OpenRouter API
+async function generateEmbedding(text: string, openRouterApiKey: string): Promise<number[]> {
   try {
-    const response = await fetch('https://api.bytez.com/models/v2/openai/v1/embeddings', {
+    // Using OpenRouter's embeddings API with sentence-transformers model
+    const response = await fetch('https://openrouter.ai/api/v1/embeddings', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${bytezApiKey}`
+        'Authorization': `Bearer ${openRouterApiKey}`
       },
       body: JSON.stringify({
-        model: 'nomic-embed-text-v1.5',
-        input: text.substring(0, 8000), // Limit text length
-        task_type: 'search_query'
+        model: 'BAAI/bge-base-en-v1.5',
+        input: text.substring(0, 8000) // Limit text length
       })
     })
 
     if (!response.ok) {
       const errorText = await response.text()
       console.error('Embedding API error:', response.status, errorText)
-      throw new Error(`Failed to generate embedding: ${response.status}`)
+      throw new Error(`Failed to generate embedding: ${response.status} - ${errorText}`)
     }
 
     const data = await response.json()
+    // OpenRouter returns embeddings in OpenAI-compatible format
     return data.data[0].embedding
   } catch (error: any) {
     console.error('Error generating embedding:', error)
@@ -70,6 +71,54 @@ serve(async (req) => {
   try {
     // Validate request body
     const body = await req.json()
+    
+    // Validate API keys
+    const bytezApiKey = Deno.env.get('BYTEZ_API_KEY')
+    const openRouterApiKey = Deno.env.get('OPENROUTER_API_KEY')
+    
+    if (!bytezApiKey) {
+      console.error('BYTEZ_API_KEY environment variable is not set')
+      return new Response(
+        JSON.stringify({ error: 'Server configuration error: Bytez API key not configured' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+    
+    if (!openRouterApiKey) {
+      console.error('OPENROUTER_API_KEY environment variable is not set')
+      return new Response(
+        JSON.stringify({ error: 'Server configuration error: OpenRouter API key not configured' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Handle embedding generation request
+    if (body.action === 'embed') {
+        const { text } = body
+        if (!text || typeof text !== 'string') {
+            return new Response(
+                JSON.stringify({ error: 'Invalid request: text is required for embedding' }),
+                { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            )
+        }
+        
+        try {
+            console.log('Attempting to generate embedding. API Key present:', !!bytezApiKey);
+            const embedding = await generateEmbedding(text, openRouterApiKey)
+            return new Response(
+                JSON.stringify({ embedding }),
+                { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            )
+        } catch (error: any) {
+            console.error('Embedding generation failed:', error);
+            return new Response(
+                JSON.stringify({ error: `Embedding generation failed: ${error.message}` }),
+                { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            )
+        }
+    }
+
+    // Default: Handle chat request
     const { messages } = body
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
@@ -111,16 +160,6 @@ serve(async (req) => {
       )
     }
 
-    // Validate Bytez API key
-    const bytezApiKey = Deno.env.get('BYTEZ_API_KEY')
-    if (!bytezApiKey) {
-      console.error('BYTEZ_API_KEY environment variable is not set')
-      return new Response(
-        JSON.stringify({ error: 'Server configuration error: API key not configured' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
     console.log(`Processing message for user ${user.id}: "${userMessage.substring(0, 50)}..."`)
 
     // RAG: Search for relevant documents
@@ -128,7 +167,7 @@ serve(async (req) => {
     let citations: any[] = []
     
     try {
-      const queryEmbedding = await generateEmbedding(userMessage, bytezApiKey)
+      const queryEmbedding = await generateEmbedding(userMessage, openRouterApiKey)
       const relevantDocs = await searchDocuments(supabaseClient, queryEmbedding, 0.5, 3)
       
       if (relevantDocs && relevantDocs.length > 0) {

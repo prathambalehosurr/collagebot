@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { Send, LogOut, Settings, Bot, User, Sparkles, TrendingUp, FileText } from 'lucide-react';
+import { Send, LogOut, Settings, Bot, User, Sparkles, TrendingUp, FileText, Trash2 } from 'lucide-react';
 import { useAuth } from '../components/AuthProvider';
 import { supabase } from '../lib/supabase';
 import { generateResponse } from '../lib/gemini';
@@ -18,7 +18,15 @@ export default function Chat() {
         const fetchMessages = async () => {
             const { data, error } = await supabase.from('chat_messages').select('*').eq('user_id', user?.id).order('created_at', { ascending: true });
             if (!error && data) {
-                const formatted = data.map(msg => ({ role: msg.role || 'assistant', content: msg.message || msg.response }));
+                const formatted = [];
+                data.forEach(msg => {
+                    if (msg.message) {
+                        formatted.push({ role: 'user', content: msg.message });
+                    }
+                    if (msg.response) {
+                        formatted.push({ role: 'assistant', content: msg.response });
+                    }
+                });
                 setMessages(formatted);
             }
         };
@@ -42,14 +50,30 @@ export default function Chat() {
             await supabase.from('chat_messages').insert({
                 user_id: user.id,
                 message: userMessage,
-                response: result.response,
-                role: 'assistant'
+                response: result.response
             });
         } catch (error) {
             console.error('Chat error:', error);
             setMessages(prev => [...prev, { role: 'assistant', content: `Error: ${error.message || 'Unknown error'}` }]);
         } finally {
             setLoading(false);
+        }
+    }
+
+    async function clearChat() {
+        if (!confirm('Are you sure you want to clear the chat history?')) return;
+
+        try {
+            const { error } = await supabase
+                .from('chat_messages')
+                .delete()
+                .eq('user_id', user.id);
+
+            if (error) throw error;
+            setMessages([]);
+        } catch (error) {
+            console.error('Error clearing chat:', error);
+            alert('Failed to clear chat history');
         }
     }
 
@@ -132,6 +156,20 @@ export default function Chat() {
                     </div>
                 </div>
                 <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                    <button onClick={clearChat} className="btn btn-secondary" style={{
+                        padding: '0.625rem 1.25rem',
+                        gap: '0.5rem',
+                        background: 'rgba(239, 68, 68, 0.1)',
+                        border: '1px solid rgba(239, 68, 68, 0.2)',
+                        borderRadius: '0.75rem',
+                        color: '#ef4444',
+                        transition: 'all 0.3s',
+                        display: 'flex',
+                        alignItems: 'center',
+                        cursor: 'pointer'
+                    }}>
+                        <Trash2 size={18} /> Clear Chat
+                    </button>
                     {isAdmin && (
                         <>
                             <Link to="/admin" className="btn btn-secondary" style={{

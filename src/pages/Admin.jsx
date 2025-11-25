@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Upload, Trash2, FileText, File } from 'lucide-react';
+import { ArrowLeft, Upload, Trash2, FileText, File, Sparkles } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { extractTextFromPdf } from '../lib/pdf';
 import { useAuth } from '../components/AuthProvider';
@@ -83,7 +83,7 @@ export default function Admin() {
     }
 
     async function handleDelete(id) {
-        if (!confirm('Are you sure you want to delete this document?')) return;
+        if (!confirm('Are you sure you want to delete this document? This action cannot be undone.')) return;
 
         try {
             const { error } = await supabase
@@ -94,7 +94,7 @@ export default function Admin() {
             if (error) throw error;
 
             setDocuments(prev => prev.filter(doc => doc.id !== id));
-            setMessage({ type: 'success', text: 'Document deleted.' });
+            setMessage({ type: 'success', text: 'Document deleted successfully.' });
         } catch (error) {
             console.error('Delete error:', error);
             setMessage({ type: 'error', text: 'Failed to delete document.' });
@@ -200,10 +200,37 @@ export default function Admin() {
                                     }}>
                                         <File size={20} />
                                     </div>
-                                    <div>
-                                        <h4 style={{ fontWeight: '600', marginBottom: '0.25rem' }}>{doc.title}</h4>
-                                        <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                                            {new Date(doc.uploaded_at).toLocaleDateString()} • {doc.file_type.toUpperCase()}
+                                    <div style={{ flex: 1 }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                                            <h3 style={{ margin: 0, fontSize: '1rem', color: 'var(--text-primary)' }}>{doc.title}</h3>
+                                            <span style={{
+                                                fontSize: '0.7rem',
+                                                padding: '0.1rem 0.4rem',
+                                                borderRadius: '0.25rem',
+                                                background: 'var(--bg-tertiary)',
+                                                color: 'var(--text-secondary)',
+                                                border: '1px solid var(--glass-border)'
+                                            }}>
+                                                {doc.file_type.toUpperCase()}
+                                            </span>
+                                            {doc.embedding && (
+                                                <span style={{
+                                                    fontSize: '0.7rem',
+                                                    padding: '0.1rem 0.4rem',
+                                                    borderRadius: '0.25rem',
+                                                    background: 'rgba(16, 185, 129, 0.1)',
+                                                    color: '#10b981',
+                                                    border: '1px solid rgba(16, 185, 129, 0.2)',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '0.25rem'
+                                                }}>
+                                                    <Sparkles size={10} /> Vectorized
+                                                </span>
+                                            )}
+                                        </div>
+                                        <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                                            Uploaded on {new Date(doc.uploaded_at).toLocaleDateString()}
                                         </p>
                                     </div>
                                 </div>

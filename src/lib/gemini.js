@@ -44,9 +44,31 @@ export async function generateResponse(messages) {
 }
 
 /**
- * This function is no longer needed
- * Keeping it for backward compatibility
+ * Generate embedding for text using the Edge Function
+ * @param {string} text - Text to embed
+ * @returns {Promise<number[]|null>} - Embedding vector or null
  */
 export async function embedText(text) {
-    return null;
+    try {
+        const { data, error } = await supabase.functions.invoke('chat-handler', {
+            body: { action: 'embed', text }
+        });
+
+        if (error) {
+            console.error('Embedding Error:', error);
+            throw new Error(`Embedding failed: ${error.message || 'Unknown server error'}`);
+        }
+
+        if (!data || !data.embedding) {
+            if (data?.error) {
+                throw new Error(`Embedding API error: ${data.error}`);
+            }
+            throw new Error('No embedding returned from server');
+        }
+
+        return data.embedding;
+    } catch (error) {
+        console.error('Embedding failed:', error);
+        throw error; // Propagate error to caller
+    }
 }
