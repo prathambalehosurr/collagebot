@@ -83,7 +83,7 @@ Format your response using Markdown (bold, lists, etc.) where appropriate.`
     ]
 
     // Call Bytez API using OpenAI-compatible endpoint
-    const response = await fetch('https://api.bytez.com/v1/chat/completions', {
+    const response = await fetch('https://api.bytez.com/models/v2/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
