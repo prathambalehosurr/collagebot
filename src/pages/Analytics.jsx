@@ -2,12 +2,13 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, TrendingUp, Users, MessageSquare, Clock } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 
 export default function Analytics() {
     const [analytics, setAnalytics] = useState(null);
     const [loading, setLoading] = useState(true);
     const [timeRange, setTimeRange] = useState(7);
+    const [ratingStats, setRatingStats] = useState({ up: 0, down: 0, total: 0 });
 
     useEffect(() => {
         fetchAnalytics();
@@ -22,6 +23,19 @@ export default function Analytics() {
 
             if (error) throw error;
             setAnalytics(data);
+
+            // Fetch rating stats
+            const { data: ratings, error: ratingError } = await supabase
+                .from('chat_messages')
+                .select('rating')
+                .not('rating', 'is', null);
+
+            if (!ratingError && ratings) {
+                const up = ratings.filter(r => r.rating === 'up').length;
+                const down = ratings.filter(r => r.rating === 'down').length;
+                setRatingStats({ up, down, total: up + down });
+            }
+
         } catch (error) {
             console.error('Error fetching analytics:', error);
         } finally {
@@ -177,7 +191,7 @@ export default function Analytics() {
                 maxWidth: '1400px',
                 margin: '0 auto',
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(500px, 1fr))',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
                 gap: '1.5rem'
             }}>
                 {/* Messages Over Time */}
@@ -215,13 +229,69 @@ export default function Analytics() {
                     )}
                 </div>
 
-                {/* Top Questions */}
+                {/* User Satisfaction */}
                 <div style={{
                     padding: '1.5rem',
                     borderRadius: '1rem',
                     background: 'var(--bg-secondary)',
                     border: '1px solid var(--glass-border)',
                     boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2)'
+                }}>
+                    <h3 style={{ marginBottom: '1.5rem', color: 'var(--text-primary)' }}>
+                        <Sparkles size={20} style={{ verticalAlign: 'middle', marginRight: '0.5rem' }} />
+                        User Satisfaction
+                    </h3>
+                    {ratingStats.total > 0 ? (
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '300px' }}>
+                            <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                    <Pie
+                                        data={[
+                                            { name: 'Helpful', value: ratingStats.up },
+                                            { name: 'Not Helpful', value: ratingStats.down }
+                                        ]}
+                                        cx="50%"
+                                        cy="50%"
+                                        innerRadius={60}
+                                        outerRadius={80}
+                                        paddingAngle={5}
+                                        dataKey="value"
+                                    >
+                                        <Cell fill="#10b981" />
+                                        <Cell fill="#ef4444" />
+                                    </Pie>
+                                    <Tooltip
+                                        contentStyle={{
+                                            background: 'var(--bg-tertiary)',
+                                            border: '1px solid var(--glass-border)',
+                                            borderRadius: '0.5rem'
+                                        }}
+                                    />
+                                    <Legend />
+                                </PieChart>
+                            </ResponsiveContainer>
+                            <div style={{ position: 'absolute', textAlign: 'center' }}>
+                                <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>
+                                    {Math.round((ratingStats.up / ratingStats.total) * 100)}%
+                                </div>
+                                <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Satisfaction</div>
+                            </div>
+                        </div>
+                    ) : (
+                        <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '3rem' }}>
+                            No ratings yet
+                        </p>
+                    )}
+                </div>
+
+                {/* Top Questions */}
+                <div style={{
+                    padding: '1.5rem',
+                    borderRadius: '1rem',
+                    background: 'var(--bg-secondary)',
+                    border: '1px solid var(--glass-border)',
+                    boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2)',
+                    gridColumn: '1 / -1'
                 }}>
                     <h3 style={{ marginBottom: '1.5rem', color: 'var(--text-primary)' }}>
                         <MessageSquare size={20} style={{ verticalAlign: 'middle', marginRight: '0.5rem' }} />

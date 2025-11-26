@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { Send, LogOut, Settings, Bot, User, Sparkles, TrendingUp, FileText, Trash2 } from 'lucide-react';
+import { Send, LogOut, Settings, Bot, User, Sparkles, TrendingUp, FileText, Trash2, ThumbsUp, ThumbsDown, X } from 'lucide-react';
 import { useAuth } from '../components/AuthProvider';
 import { supabase } from '../lib/supabase';
 import { generateResponse } from '../lib/gemini';
@@ -11,6 +11,9 @@ export default function Chat() {
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
+    const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
+    const [currentRatingId, setCurrentRatingId] = useState(null);
+    const [feedbackText, setFeedbackText] = useState('');
     const messagesEndRef = useRef(null);
 
     useEffect(() => {
@@ -24,7 +27,12 @@ export default function Chat() {
                         formatted.push({ role: 'user', content: msg.message });
                     }
                     if (msg.response) {
-                        formatted.push({ role: 'assistant', content: msg.response });
+                        formatted.push({
+                            id: msg.id,
+                            role: 'assistant',
+                            content: msg.response,
+                            rating: msg.rating
+                        });
                     }
                 });
                 setMessages(formatted);
@@ -46,12 +54,21 @@ export default function Chat() {
         setLoading(true);
         try {
             const result = await generateResponse([...messages, { role: 'user', content: userMessage }]);
-            setMessages(prev => [...prev, { role: 'assistant', content: result.response, citations: result.citations }]);
-            await supabase.from('chat_messages').insert({
+
+            const { data: insertedData, error: insertError } = await supabase.from('chat_messages').insert({
                 user_id: user.id,
                 message: userMessage,
                 response: result.response
-            });
+            }).select().single();
+
+            if (insertError) throw insertError;
+
+            setMessages(prev => [...prev, {
+                id: insertedData.id,
+                role: 'assistant',
+                content: result.response,
+                citations: result.citations
+            }]);
         } catch (error) {
             console.error('Chat error:', error);
             setMessages(prev => [...prev, { role: 'assistant', content: `Error: ${error.message || 'Unknown error'}` }]);
@@ -74,6 +91,60 @@ export default function Chat() {
         } catch (error) {
             console.error('Error clearing chat:', error);
             alert('Failed to clear chat history');
+        }
+    }
+
+    async function handleRating(messageId, rating) {
+        if (!messageId) return;
+
+        if (rating === 'down') {
+            setCurrentRatingId(messageId);
+            setFeedbackModalOpen(true);
+            return;
+        }
+
+        // Optimistic update for 'up' or toggling off
+        setMessages(prev => prev.map(msg =>
+            msg.id === messageId ? { ...msg, rating: rating === msg.rating ? null : rating } : msg
+        ));
+
+        try {
+            const newRating = messages.find(m => m.id === messageId)?.rating === rating ? null : rating;
+
+            const { error } = await supabase
+                .from('chat_messages')
+                .update({ rating: newRating, feedback: null }) // Clear feedback if changing to up/null
+                .eq('id', messageId);
+
+            if (error) throw error;
+        } catch (error) {
+            console.error('Error updating rating:', error);
+            fetchMessages();
+        }
+    }
+
+    async function submitFeedback() {
+        if (!currentRatingId) return;
+
+        // Optimistic update
+        setMessages(prev => prev.map(msg =>
+            msg.id === currentRatingId ? { ...msg, rating: 'down' } : msg
+        ));
+
+        try {
+            const { error } = await supabase
+                .from('chat_messages')
+                .update({ rating: 'down', feedback: feedbackText })
+                .eq('id', currentRatingId);
+
+            if (error) throw error;
+
+            setFeedbackModalOpen(false);
+            setFeedbackText('');
+            setCurrentRatingId(null);
+        } catch (error) {
+            console.error('Error submitting feedback:', error);
+            alert('Failed to submit feedback');
         }
     }
 
@@ -344,6 +415,49 @@ export default function Chat() {
                                             </div>
                                         </div>
                                     )}
+
+                                    {/* Rating Buttons */}
+                                    <div style={{
+                                        display: 'flex',
+                                        gap: '0.5rem',
+                                        marginTop: '0.75rem',
+                                        justifyContent: 'flex-end'
+                                    }}>
+                                        <button
+                                            onClick={() => handleRating(msg.id, 'up')}
+                                            style={{
+                                                background: 'transparent',
+                                                border: 'none',
+                                                cursor: 'pointer',
+                                                padding: '0.25rem',
+                                                color: msg.rating === 'up' ? '#10b981' : 'var(--text-secondary)',
+                                                transition: 'all 0.2s',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '0.25rem'
+                                            }}
+                                            title="Helpful"
+                                        >
+                                            <ThumbsUp size={16} fill={msg.rating === 'up' ? 'currentColor' : 'none'} />
+                                        </button>
+                                        <button
+                                            onClick={() => handleRating(msg.id, 'down')}
+                                            style={{
+                                                background: 'transparent',
+                                                border: 'none',
+                                                cursor: 'pointer',
+                                                padding: '0.25rem',
+                                                color: msg.rating === 'down' ? '#ef4444' : 'var(--text-secondary)',
+                                                transition: 'all 0.2s',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '0.25rem'
+                                            }}
+                                            title="Not helpful"
+                                        >
+                                            <ThumbsDown size={16} fill={msg.rating === 'down' ? 'currentColor' : 'none'} />
+                                        </button>
+                                    </div>
                                 </>
                             ) : (
                                 msg.content
@@ -498,6 +612,103 @@ export default function Chat() {
         main::-webkit-scrollbar-thumb { background: var(--accent-primary); border-radius: 4px; }
         main::-webkit-scrollbar-thumb:hover { background: var(--accent-secondary); }
       `}</style>
+
+            {/* Feedback Modal */}
+            {feedbackModalOpen && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: 'rgba(0, 0, 0, 0.7)',
+                    backdropFilter: 'blur(5px)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 100
+                }}>
+                    <div style={{
+                        background: 'var(--bg-secondary)',
+                        border: '1px solid var(--glass-border)',
+                        borderRadius: '1rem',
+                        padding: '2rem',
+                        width: '90%',
+                        maxWidth: '500px',
+                        position: 'relative',
+                        boxShadow: '0 10px 40px rgba(0, 0, 0, 0.5)'
+                    }}>
+                        <button
+                            onClick={() => setFeedbackModalOpen(false)}
+                            style={{
+                                position: 'absolute',
+                                top: '1rem',
+                                right: '1rem',
+                                background: 'transparent',
+                                border: 'none',
+                                color: 'var(--text-secondary)',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            <X size={20} />
+                        </button>
+
+                        <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem' }}>
+                            What went wrong?
+                        </h3>
+                        <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
+                            Your feedback helps us improve the bot's accuracy.
+                        </p>
+
+                        <textarea
+                            value={feedbackText}
+                            onChange={(e) => setFeedbackText(e.target.value)}
+                            placeholder="e.g., The answer was inaccurate, outdated, or irrelevant..."
+                            style={{
+                                width: '100%',
+                                height: '120px',
+                                padding: '1rem',
+                                background: 'var(--bg-primary)',
+                                border: '1px solid var(--glass-border)',
+                                borderRadius: '0.5rem',
+                                color: 'var(--text-primary)',
+                                marginBottom: '1.5rem',
+                                resize: 'none'
+                            }}
+                        />
+
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+                            <button
+                                onClick={() => setFeedbackModalOpen(false)}
+                                style={{
+                                    padding: '0.75rem 1.5rem',
+                                    background: 'transparent',
+                                    border: '1px solid var(--glass-border)',
+                                    borderRadius: '0.5rem',
+                                    color: 'var(--text-primary)',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={submitFeedback}
+                                style={{
+                                    padding: '0.75rem 1.5rem',
+                                    background: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))',
+                                    border: 'none',
+                                    borderRadius: '0.5rem',
+                                    color: 'white',
+                                    cursor: 'pointer',
+                                    fontWeight: 'bold'
+                                }}
+                            >
+                                Submit Feedback
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
