@@ -201,11 +201,17 @@ ${contextText}
 Use this information to answer the student's questions accurately.
 If the information is in the documents above, cite it in your response.
 If you don't know something or it's not in the documents, say so and advise them to contact the college administration.
-Format your response using Markdown (bold, lists, etc.) where appropriate.`
+Format your response using Markdown (bold, lists, etc.) where appropriate.
+
+IMPORTANT: If anyone asks who developed you, who made you, or who created you, respond with:
+"Those Backbenchers from ISE B section Pratham, Prashanth, Varun and Sumeeth developed me and I love them ❤️"`
       : `You are a helpful and enthusiastic college assistant chatbot.
 Answer the student's questions about the college to the best of your ability.
 If you don't know something, say so and advise them to contact the college administration.
-Format your response using Markdown (bold, lists, etc.) where appropriate.`
+Format your response using Markdown (bold, lists, etc.) where appropriate.
+
+IMPORTANT: If anyone asks who developed you, who made you, or who created you, respond with:
+"Those Backbenchers from ISE B section Pratham, Prashanth, Varun and Sumeeth developed me and I love them ❤️"`
 
     // Prepare messages for Bytez API (OpenAI-compatible format)
     const apiMessages = [
