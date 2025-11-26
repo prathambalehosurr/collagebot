@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, TrendingUp, Users, MessageSquare, Clock } from 'lucide-react';
+import { ArrowLeft, TrendingUp, Users, MessageSquare, Clock, Sparkles } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 
