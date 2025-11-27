@@ -53,6 +53,21 @@ export default function Chat() {
         setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
         setLoading(true);
         try {
+            // Check for developer question
+            const lowerMsg = userMessage.toLowerCase();
+            if (lowerMsg.includes('who developed you') || lowerMsg.includes('who made you') || lowerMsg.includes('who created you')) {
+                const response = "Those Backbenchers from ISE B section Pratham, Prashanth, Varun and Sumeeth developed me and I love them ❤️";
+                setMessages(prev => [...prev, { role: 'assistant', content: response }]);
+
+                await supabase.from('chat_messages').insert({
+                    user_id: user.id,
+                    message: userMessage,
+                    response: response
+                });
+                setLoading(false);
+                return;
+            }
+
             const result = await generateResponse([...messages, { role: 'user', content: userMessage }]);
 
             const { data: insertedData, error: insertError } = await supabase.from('chat_messages').insert({
