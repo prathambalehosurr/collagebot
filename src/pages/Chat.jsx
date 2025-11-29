@@ -12,6 +12,7 @@ export default function Chat() {
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
     const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
+    const [clearChatModalOpen, setClearChatModalOpen] = useState(false);
     const [currentRatingId, setCurrentRatingId] = useState(null);
     const [feedbackText, setFeedbackText] = useState('');
     const messagesEndRef = useRef(null);
@@ -53,8 +54,22 @@ export default function Chat() {
         setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
         setLoading(true);
         try {
-            // Check for developer question
+            // Check for name/identity questions
             const lowerMsg = userMessage.toLowerCase();
+            if (lowerMsg.includes('what is your name') || lowerMsg.includes('who are you') || lowerMsg.includes('what are you called') || lowerMsg.includes('your name')) {
+                const response = "Hey! I'm **BroFessor** 🎓 - your friendly college assistant bro! Hit me up with any questions about college stuff and I'll help you out.";
+                setMessages(prev => [...prev, { role: 'assistant', content: response }]);
+
+                await supabase.from('chat_messages').insert({
+                    user_id: user.id,
+                    message: userMessage,
+                    response: response
+                });
+                setLoading(false);
+                return;
+            }
+
+            // Check for developer question
             if (lowerMsg.includes('who developed you') || lowerMsg.includes('who made you') || lowerMsg.includes('who created you')) {
                 const response = "Those Backbenchers from ISE B section Pratham, Prashanth, Varun and Sumeeth developed me and I love them ❤️";
                 setMessages(prev => [...prev, { role: 'assistant', content: response }]);
@@ -92,9 +107,11 @@ export default function Chat() {
         }
     }
 
-    async function clearChat() {
-        if (!confirm('Are you sure you want to clear the chat history?')) return;
+    function clearChat() {
+        setClearChatModalOpen(true);
+    }
 
+    async function confirmClearChat() {
         try {
             const { error } = await supabase
                 .from('chat_messages')
@@ -103,6 +120,7 @@ export default function Chat() {
 
             if (error) throw error;
             setMessages([]);
+            setClearChatModalOpen(false);
         } catch (error) {
             console.error('Error clearing chat:', error);
             alert('Failed to clear chat history');
@@ -227,8 +245,9 @@ export default function Chat() {
                             background: 'linear-gradient(135deg, var(--accent-primary), var(--accent-tertiary))',
                             WebkitBackgroundClip: 'text',
                             WebkitTextFillColor: 'transparent',
-                            backgroundClip: 'text'
-                        }}>CollegeBot</h1>
+                            backgroundClip: 'text',
+                            filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))'
+                        }}>BroFessor</h1>
                         <p style={{
                             fontSize: '0.75rem',
                             color: 'var(--text-secondary)',
@@ -376,7 +395,8 @@ export default function Chat() {
                             borderRadius: '1.25rem',
                             background: msg.role === 'user'
                                 ? 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))'
-                                : 'var(--bg-secondary)',
+                                : 'rgba(30, 41, 59, 0.7)',
+                            backdropFilter: msg.role === 'assistant' ? 'blur(10px)' : 'none',
                             color: 'var(--text-primary)',
                             borderTopRightRadius: msg.role === 'user' ? '0.25rem' : '1.25rem',
                             borderTopLeftRadius: msg.role === 'assistant' ? '0.25rem' : '1.25rem',
@@ -569,7 +589,8 @@ export default function Chat() {
                         }}
                         onFocus={e => {
                             e.target.style.borderColor = 'var(--accent-primary)';
-                            e.target.style.boxShadow = '0 4px 20px rgba(102, 126, 234, 0.3)';
+                            e.target.style.boxShadow = '0 0 25px rgba(102, 126, 234, 0.4)';
+                            e.target.style.background = 'rgba(26, 31, 58, 0.9)';
                         }}
                         onBlur={e => {
                             e.target.style.borderColor = 'var(--glass-border)';
@@ -621,12 +642,83 @@ export default function Chat() {
         @keyframes slideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
         @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.05); opacity: 0.9; } }
         @keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+        
         .container { width: 100%; max-width: 1200px; margin: 0 auto; }
         main::-webkit-scrollbar { width: 8px; }
         main::-webkit-scrollbar-track { background: var(--bg-primary); }
         main::-webkit-scrollbar-thumb { background: var(--accent-primary); border-radius: 4px; }
         main::-webkit-scrollbar-thumb:hover { background: var(--accent-secondary); }
       `}</style>
+
+            {/* Clear Chat Modal */}
+            {clearChatModalOpen && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: 'rgba(0, 0, 0, 0.7)',
+                    backdropFilter: 'blur(5px)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 1000,
+                    animation: 'fadeIn 0.2s ease-out'
+                }}>
+                    <div style={{
+                        background: 'var(--bg-secondary)',
+                        border: '1px solid var(--glass-border)',
+                        borderRadius: '1rem',
+                        padding: '2rem',
+                        width: '90%',
+                        maxWidth: '400px',
+                        position: 'relative',
+                        boxShadow: '0 20px 50px rgba(0, 0, 0, 0.3)',
+                        animation: 'pulse 0.3s ease-out'
+                    }}>
+                        <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem', color: 'var(--text-primary)' }}>
+                            Clear Chat History?
+                        </h3>
+                        <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
+                            This will permanently delete all your messages. This action cannot be undone.
+                        </p>
+
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+                            <button
+                                onClick={() => setClearChatModalOpen(false)}
+                                style={{
+                                    padding: '0.75rem 1.5rem',
+                                    background: 'transparent',
+                                    border: '1px solid var(--glass-border)',
+                                    borderRadius: '0.5rem',
+                                    color: 'var(--text-primary)',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={confirmClearChat}
+                                style={{
+                                    padding: '0.75rem 1.5rem',
+                                    background: 'rgba(239, 68, 68, 0.9)',
+                                    border: 'none',
+                                    borderRadius: '0.5rem',
+                                    color: 'white',
+                                    cursor: 'pointer',
+                                    fontWeight: 'bold',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.5rem'
+                                }}
+                            >
+                                <Trash2 size={16} /> Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Feedback Modal */}
             {feedbackModalOpen && (

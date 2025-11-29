@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'base', themeVariables: { fontFamily: 'Inter, sans-serif' } });
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: white;
+        }
+
+        .mermaid {
+            transform: scale(1.5);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="mermaid">
+        graph LR
+        %% Modern Styling
+        classDef client fill:#e3f2fd,stroke:#2196f3,stroke-width:2px,rx:10,ry:10;
+        classDef server fill:#f3e5f5,stroke:#9c27b0,stroke-width:2px,rx:10,ry:10;
+        classDef ai fill:#fff3e0,stroke:#ff9800,stroke-width:2px,rx:10,ry:10;
+        classDef db fill:#e8f5e9,stroke:#4caf50,stroke-width:2px,rx:10,ry:10;
+
+        %% Nodes
+        User(👤 User):::client
+        App(💻 React App):::client
+
+        subgraph Backend ["☁️ Secure Backend"]
+        API[⚡ Edge Functions]:::server
+        end
+
+        subgraph Intelligence ["🧠 Intelligence & Memory"]
+        Gemini[✨ Gemini AI]:::ai
+        DB[(🗄️ Database)]:::db
+        end
+
+        %% Connections
+        User -->|"Chats"| App
+        App -->|"Sends Query"| API
+
+        API <-->|"RAG Search"| DB
+            API <-->|"Generate Answer"| Gemini
+    </div>
+</body>
+
+</html>

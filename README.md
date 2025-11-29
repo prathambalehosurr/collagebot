@@ -1,4 +1,4 @@
-# 🤖 College Chatbot - AI-Powered Information Assistant
+# 🎓 BroFessor - AI-Powered College Assistant
 
 A production-ready chatbot with **RAG (Retrieval-Augmented Generation)**, semantic search, citations, and secure backend architecture.
 
