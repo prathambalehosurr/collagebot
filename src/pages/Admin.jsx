@@ -259,8 +259,22 @@ export default function Admin() {
                 <Link to="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', textDecoration: 'none', marginBottom: '1rem' }}>
                     <ArrowLeft size={18} /> Back to Chat
                 </Link>
-                <h1 style={{ fontSize: '2rem', fontWeight: 'bold' }}>Admin Dashboard</h1>
-                <p style={{ color: 'var(--text-secondary)' }}>Manage knowledge base documents</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                    <img
+                        src="/brofessor-logo.jpg"
+                        alt="BroFessor Logo"
+                        style={{
+                            width: '80px',
+                            height: '80px',
+                            objectFit: 'contain',
+                            filter: 'drop-shadow(0 4px 12px rgba(255, 215, 0, 0.3))'
+                        }}
+                    />
+                    <div>
+                        <h1 style={{ fontSize: '2rem', fontWeight: 'bold', margin: 0 }}>Admin Dashboard</h1>
+                        <p style={{ color: 'var(--text-secondary)', margin: '0.25rem 0 0 0' }}>Manage knowledge base documents</p>
+                    </div>
+                </div>
             </div>
 
             {message.text && (

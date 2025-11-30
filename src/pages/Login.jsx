@@ -28,6 +28,18 @@ export default function Login() {
     return (
         <div className="container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
             <div className="card animate-fade-in" style={{ width: '100%', maxWidth: '400px' }}>
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem' }}>
+                    <img
+                        src="/brofessor-logo.jpg"
+                        alt="BroFessor Logo"
+                        style={{
+                            width: '120px',
+                            height: '120px',
+                            objectFit: 'contain',
+                            filter: 'drop-shadow(0 4px 12px rgba(255, 215, 0, 0.3))'
+                        }}
+                    />
+                </div>
                 <h2 style={{ textAlign: 'center', marginBottom: '2rem', fontSize: '2rem', fontWeight: 'bold' }}>Welcome Back</h2>
 
                 {error && (

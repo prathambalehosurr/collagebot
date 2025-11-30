@@ -233,30 +233,39 @@ export default function Chat() {
                         alignItems: 'center',
                         justifyContent: 'center',
                         boxShadow: '0 4px 16px rgba(102, 126, 234, 0.4)',
-                        animation: 'pulse 2s ease-in-out infinite'
+                        animation: 'pulse 2s ease-in-out infinite',
+                        overflow: 'hidden',
+                        padding: '4px'
                     }}>
-                        <Bot size={28} color="white" />
+                        <img
+                            src="/brofessor-logo.jpg"
+                            alt="BroFessor"
+                            style={{
+                                width: '100%',
+                                height: '100%',
+                                objectFit: 'cover',
+                                borderRadius: '50%'
+                            }}
+                        />
                     </div>
                     <div>
-                        <h1 style={{
-                            fontSize: '1.5rem',
-                            fontWeight: 'bold',
-                            margin: 0,
-                            background: 'linear-gradient(135deg, var(--accent-primary), var(--accent-tertiary))',
-                            WebkitBackgroundClip: 'text',
-                            WebkitTextFillColor: 'transparent',
-                            backgroundClip: 'text',
-                            filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))'
-                        }}>BroFessor</h1>
                         <p style={{
-                            fontSize: '0.75rem',
+                            fontSize: '1.1rem',
+                            fontWeight: '600',
+                            color: 'var(--text-primary)',
+                            margin: '0 0 0.15rem 0'
+                        }}>
+                            BroFessor
+                        </p>
+                        <p style={{
+                            fontSize: '0.85rem',
                             color: 'var(--text-secondary)',
                             margin: 0,
                             display: 'flex',
                             alignItems: 'center',
                             gap: '0.25rem'
                         }}>
-                            <Sparkles size={12} /> AI-Powered Assistant
+                            <Sparkles size={13} /> AI-Powered Assistant
                         </p>
                     </div>
                 </div>
