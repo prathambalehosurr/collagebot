@@ -80,7 +80,7 @@ serve(async (req) => {
       console.error('BYTEZ_API_KEY environment variable is not set')
       return new Response(
         JSON.stringify({ error: 'Server configuration error: Bytez API key not configured' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
     
@@ -88,7 +88,7 @@ serve(async (req) => {
       console.error('OPENROUTER_API_KEY environment variable is not set')
       return new Response(
         JSON.stringify({ error: 'Server configuration error: OpenRouter API key not configured' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
@@ -124,7 +124,7 @@ serve(async (req) => {
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return new Response(
         JSON.stringify({ error: 'Invalid request: messages array is required' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
@@ -132,7 +132,7 @@ serve(async (req) => {
     if (!userMessage || typeof userMessage !== 'string') {
       return new Response(
         JSON.stringify({ error: 'Invalid request: last message must have content' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
@@ -141,7 +141,7 @@ serve(async (req) => {
     if (!authHeader) {
       return new Response(
         JSON.stringify({ error: 'Missing authorization header' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
@@ -156,7 +156,7 @@ serve(async (req) => {
       console.error('Auth error:', userError)
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
@@ -287,7 +287,7 @@ IMPORTANT: If anyone asks who developed you, who made you, or who created you, r
 
     return new Response(
       JSON.stringify({ error: errorMessage }),
-      { status: statusCode, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
 })

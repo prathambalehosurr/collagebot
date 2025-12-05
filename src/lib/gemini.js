@@ -16,6 +16,10 @@ export async function generateResponse(messages) {
             throw error;
         }
 
+        if (data?.error) {
+            throw new Error(data.error);
+        }
+
         if (!data || !data.response) {
             throw new Error('Invalid response from server');
         }
