@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 function validateEnvVars() {
   const requiredVars = {
     VITE_SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL,
-    VITE_SUPABASE_ANON_KEY: import.meta.env.VITE_SUPABASE_ANON_KEY
+    VITE_SUPABASE_PUBLISHABLE_KEY: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
   };
 
   const missing = Object.entries(requiredVars)
@@ -21,7 +21,7 @@ ${missing.map(v => `  - ${v}`).join('\n')}
 Please create a .env file in the root directory with:
 
 VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_ANON_KEY=your-anon-key-here
+VITE_SUPABASE_PUBLISHABLE_KEY=your-publishable-key-here
 
 See README.md for detailed setup instructions.
         `.trim();
@@ -40,7 +40,7 @@ See README.md for detailed setup instructions.
   return requiredVars;
 }
 
-const { VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY } = validateEnvVars();
+const { VITE_SUPABASE_URL, VITE_SUPABASE_PUBLISHABLE_KEY } = validateEnvVars();
 
-export const supabase = createClient(VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY);
+export const supabase = createClient(VITE_SUPABASE_URL, VITE_SUPABASE_PUBLISHABLE_KEY);
 
